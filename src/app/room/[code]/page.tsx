@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
 import sql from "@/lib/db";
+import TicTacToe from "@/components/TicTacToe";
 
 interface RoomPageProps {
   params: Promise<{ code: string }>;
@@ -17,7 +18,8 @@ export default async function RoomPage({ params }: RoomPageProps) {
   const upperCode = code.toUpperCase();
 
   const rows = await sql`
-    SELECT rooms.id, rooms.code, rooms.created_at, users.username AS owner
+    SELECT rooms.id, rooms.code, rooms.created_at, rooms.created_by,
+           users.username AS owner
     FROM rooms
     JOIN users ON users.id = rooms.created_by
     WHERE rooms.code = ${upperCode}
@@ -29,12 +31,13 @@ export default async function RoomPage({ params }: RoomPageProps) {
   }
 
   const room = rows[0];
-  const isOwner = session.user.name === room.owner;
+  const isOwner = Number(session.user.id) === Number(room.created_by);
 
   return (
     <main className="min-h-screen bg-[var(--background)] px-4 py-12">
-      <div className="mx-auto max-w-5xl">
-        <div className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] p-8">
+      <div className="mx-auto max-w-2xl">
+        {/* Room header */}
+        <div className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] p-6">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-[var(--muted)]">Room code</p>
@@ -44,7 +47,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
             </div>
             <div className="text-sm text-[var(--muted)] sm:text-right">
               <p>
-                Created by{" "}
+                Owner:{" "}
                 <span className="text-[var(--foreground)]">
                   {room.owner as string}
                 </span>
@@ -59,12 +62,16 @@ export default async function RoomPage({ params }: RoomPageProps) {
               </p>
             </div>
           </div>
+        </div>
 
-          <hr className="my-6 border-[var(--border)]" />
-
-          <p className="text-[var(--muted)]">
-            Share the room code with others so they can join. Games coming soon…
-          </p>
+        {/* Game area */}
+        <div className="mt-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)] p-6">
+          <TicTacToe
+            roomCode={upperCode}
+            currentUserId={Number(session.user.id)}
+            currentUserName={session.user.name ?? ""}
+            isOwner={isOwner}
+          />
         </div>
       </div>
     </main>
