@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS rooms (
+  id          SERIAL PRIMARY KEY,
+  code        CHAR(6) UNIQUE NOT NULL,
+  created_by  INTEGER NOT NULL REFERENCES users(id),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
